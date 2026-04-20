@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { PageWrapper } from "@/components/ui/page-wrapper";
 import { WeeklyGrid } from "@/components/views/weekly-grid";
 import { QuickCapture } from "@/components/capture/quick-capture";

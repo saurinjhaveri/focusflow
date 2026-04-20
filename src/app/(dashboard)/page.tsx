@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { PageWrapper } from "@/components/ui/page-wrapper";
 import { QuickCapture } from "@/components/capture/quick-capture";

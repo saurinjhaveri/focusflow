@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { PageWrapper } from "@/components/ui/page-wrapper";
 import { MonthlyCalendar } from "@/components/views/monthly-calendar";
 import { getMonthlyTasks } from "@/lib/actions/tasks";

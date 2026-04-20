@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { PageWrapper } from "@/components/ui/page-wrapper";
 import { PersonsSettings } from "@/components/settings/persons-settings";

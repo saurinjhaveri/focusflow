@@ -1,0 +1,239 @@
+"use server";
+
+import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
+import type { Priority, TaskStatus, TaskFilters } from "@/types";
+import { parser } from "@/lib/parser";
+
+// ── Shared include for consistent shape ──────────────────────────────────────
+const taskInclude = {
+  person: true,
+  tags: { include: { tag: true } },
+  followUps: { orderBy: { scheduledAt: "asc" as const } },
+} as const;
+
+// ── Queries ──────────────────────────────────────────────────────────────────
+
+export async function getTasks(filters: TaskFilters = {}) {
+  const where: Record<string, unknown> = {};
+
+  if (filters.status) {
+    where.status = filters.status;
+  } else {
+    // Default: exclude cancelled
+    where.status = { not: "CANCELLED" };
+  }
+
+  if (filters.personId) where.personId = filters.personId;
+  if (filters.priority) where.priority = filters.priority;
+  if (filters.search) {
+    where.title = { contains: filters.search };
+  }
+
+  return prisma.task.findMany({
+    where,
+    include: taskInclude,
+    orderBy: [{ priority: "desc" }, { dueDate: "asc" }, { createdAt: "desc" }],
+  });
+}
+
+export async function getTodayTasks() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+
+  const [overdue, today] = await Promise.all([
+    // Overdue: dueDate before today, not done/cancelled
+    prisma.task.findMany({
+      where: {
+        dueDate: { lt: start },
+        status: { in: ["TODO", "IN_PROGRESS"] },
+      },
+      include: taskInclude,
+      orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
+    }),
+    // Today: dueDate within today
+    prisma.task.findMany({
+      where: {
+        dueDate: { gte: start, lte: end },
+        status: { in: ["TODO", "IN_PROGRESS"] },
+      },
+      include: taskInclude,
+      orderBy: [{ priority: "desc" }, { createdAt: "asc" }],
+    }),
+  ]);
+
+  return { overdue, today };
+}
+
+export async function getWeeklyTasks(weekStart: Date) {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  weekEnd.setHours(23, 59, 59, 999);
+
+  return prisma.task.findMany({
+    where: {
+      dueDate: { gte: weekStart, lte: weekEnd },
+      status: { not: "CANCELLED" },
+    },
+    include: taskInclude,
+    orderBy: [{ dueDate: "asc" }, { priority: "desc" }],
+  });
+}
+
+export async function getMonthlyTasks(year: number, month: number) {
+  const start = new Date(year, month, 1);
+  const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+  return prisma.task.findMany({
+    where: {
+      dueDate: { gte: start, lte: end },
+      status: { not: "CANCELLED" },
+    },
+    include: taskInclude,
+    orderBy: [{ dueDate: "asc" }, { priority: "desc" }],
+  });
+}
+
+export async function getTasksByPerson() {
+  const persons = await prisma.person.findMany({
+    include: {
+      tasks: {
+        where: { status: { not: "CANCELLED" } },
+        include: taskInclude,
+        orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
+      },
+    },
+    orderBy: { name: "asc" },
+  });
+  return persons;
+}
+
+export async function getTaskById(id: string) {
+  return prisma.task.findUnique({
+    where: { id },
+    include: taskInclude,
+  });
+}
+
+// ── Mutations ────────────────────────────────────────────────────────────────
+
+export async function createTask(data: {
+  title: string;
+  rawInput?: string;
+  priority?: Priority;
+  status?: TaskStatus;
+  dueDate?: Date | null;
+  notes?: string;
+  personId?: string | null;
+  tagNames?: string[];
+  followUpDate?: Date;
+}) {
+  const { tagNames, followUpDate, ...rest } = data;
+
+  const task = await prisma.task.create({
+    data: {
+      ...rest,
+      tags: tagNames?.length
+        ? {
+            create: await resolveTagConnections(tagNames),
+          }
+        : undefined,
+      followUps: followUpDate
+        ? {
+            create: [{ scheduledAt: followUpDate }],
+          }
+        : undefined,
+    },
+    include: taskInclude,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/weekly");
+  revalidatePath("/monthly");
+  revalidatePath("/team");
+  return task;
+}
+
+export async function createTaskFromText(raw: string) {
+  const parsed = parser.parse(raw);
+
+  let personId: string | null = null;
+  if (parsed.personName) {
+    const person = await prisma.person.findFirst({
+      where: { name: { equals: parsed.personName } },
+    });
+    personId = person?.id ?? null;
+  }
+
+  return createTask({
+    title: parsed.title,
+    rawInput: raw,
+    priority: parsed.priority ?? "MEDIUM",
+    dueDate: parsed.dueDate ?? null,
+    personId,
+    tagNames: parsed.tags,
+    followUpDate: parsed.followUpDate,
+  });
+}
+
+export async function updateTask(
+  id: string,
+  data: Partial<{
+    title: string;
+    status: TaskStatus;
+    priority: Priority;
+    dueDate: Date | null;
+    notes: string;
+    personId: string | null;
+    completedAt: Date | null;
+  }>
+) {
+  const task = await prisma.task.update({
+    where: { id },
+    data,
+    include: taskInclude,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/weekly");
+  revalidatePath("/team");
+  return task;
+}
+
+export async function completeTask(id: string) {
+  return updateTask(id, {
+    status: "DONE",
+    completedAt: new Date(),
+  });
+}
+
+export async function reopenTask(id: string) {
+  return updateTask(id, {
+    status: "TODO",
+    completedAt: null,
+  });
+}
+
+export async function deleteTask(id: string) {
+  await prisma.task.delete({ where: { id } });
+  revalidatePath("/");
+  revalidatePath("/weekly");
+  revalidatePath("/team");
+}
+
+// ── Tag helpers ───────────────────────────────────────────────────────────────
+
+async function resolveTagConnections(tagNames: string[]) {
+  return Promise.all(
+    tagNames.map(async (name) => {
+      const tag = await prisma.tag.upsert({
+        where: { name: name.toLowerCase() },
+        update: {},
+        create: { name: name.toLowerCase() },
+      });
+      return { tag: { connect: { id: tag.id } } };
+    })
+  );
+}

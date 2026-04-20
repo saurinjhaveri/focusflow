@@ -1,0 +1,41 @@
+{
+  "name": "FocusFlow",
+  "short_name": "FocusFlow",
+  "description": "ADHD-friendly scheduling and follow-up dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F0FDFA",
+  "theme_color": "#0D9488",
+  "orientation": "portrait-primary",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Today",
+      "short_name": "Today",
+      "description": "Open Today view",
+      "url": "/",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Add Task",
+      "short_name": "Add",
+      "description": "Quick task capture",
+      "url": "/?capture=1",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    }
+  ]
+}

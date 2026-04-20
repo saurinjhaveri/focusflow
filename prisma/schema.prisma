@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+/// A person / team member used for color-coded task assignment
+model Person {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   // hex color, e.g. "#0D9488"
+  tasks     Task[]
+  createdAt DateTime @default(now())
+
+  @@map("persons")
+}
+
+/// A flexible label/context grouping for tasks
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  color String?
+  tasks TaskTag[]
+
+  @@map("tags")
+}
+
+/// Core task — the heart of FocusFlow
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  rawInput    String?    // original plain-English input, never discarded
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  dueDate     DateTime?
+  completedAt DateTime?
+  notes       String?
+  personId    String?
+  person      Person?    @relation(fields: [personId], references: [id], onDelete: SetNull)
+  tags        TaskTag[]
+  followUps   FollowUp[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
+  @@index([personId])
+  @@map("tasks")
+}
+
+/// Junction table: Task ↔ Tag (many-to-many)
+model TaskTag {
+  taskId String
+  tagId  String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@map("task_tags")
+}
+
+/// Follow-up — first-class object, not just a flag on a task
+model FollowUp {
+  id          String    @id @default(cuid())
+  taskId      String
+  task        Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime
+  note        String?
+  done        Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([scheduledAt])
+  @@index([done])
+  @@map("follow_ups")
+}

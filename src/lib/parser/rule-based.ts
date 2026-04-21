@@ -32,6 +32,10 @@ const PRIORITY_PATTERNS: [RegExp, Priority][] = [
 const PERSON_REGEX =
   /\b(?:call|email|ping|message|msg|meet(?:ing)? with|talk to|speak(?:ing)? to|contact|update|remind|ask|notify|with)\s+([A-Za-z]{2,})\b/i;
 
+// Specifically handles "follow up to/with/for Name" at the start of input
+const FOLLOWUP_PERSON_REGEX =
+  /^\s*(?:follow[- ]?up|followup|f\/u)\s+(?:with|to|for)\s+([A-Za-z]{2,})\b/i;
+
 const TAG_REGEX = /#([a-zA-Z][a-zA-Z0-9_-]*)/g;
 
 // Phrases to strip from the title after extraction
@@ -89,7 +93,7 @@ export class RuleBasedParser implements IParser {
 
     // ── Extract person name ───────────────────────────────────────────────
     let personName: string | undefined;
-    const personMatch = input.match(PERSON_REGEX);
+    const personMatch = input.match(PERSON_REGEX) ?? input.match(FOLLOWUP_PERSON_REGEX);
     if (personMatch) {
       personName = personMatch[1];
       confidence += 0.1;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  LayoutDashboard,
   CheckSquare,
   CalendarDays,
   CalendarRange,
@@ -14,9 +15,10 @@ import {
 import { cn } from "@/lib/utils";
 
 const PRIMARY_NAV = [
-  { href: "/",          label: "Today",      icon: CheckSquare,  description: "What needs doing now" },
-  { href: "/weekly",    label: "This Week",  icon: CalendarDays, description: "7-day overview"       },
-  { href: "/monthly",   label: "Monthly",    icon: CalendarRange,description: "Month at a glance"    },
+  { href: "/",        label: "Dashboard", icon: LayoutDashboard, exact: true  },
+  { href: "/today",   label: "Today",     icon: CheckSquare,     exact: true  },
+  { href: "/weekly",  label: "This Week", icon: CalendarDays,    exact: false },
+  { href: "/monthly", label: "Monthly",   icon: CalendarRange,   exact: false },
 ] as const;
 
 const SECONDARY_NAV = [
@@ -27,8 +29,8 @@ const SECONDARY_NAV = [
 export function SideNav() {
   const pathname = usePathname();
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const isActive = (href: string, exact: boolean) =>
+    exact ? pathname === href : pathname.startsWith(href);
 
   return (
     <nav
@@ -45,7 +47,7 @@ export function SideNav() {
 
       {/* Primary nav */}
       <ul className="space-y-0.5" role="list">
-        {PRIMARY_NAV.map(({ href, label, icon: Icon }) => (
+        {PRIMARY_NAV.map(({ href, label, icon: Icon, exact }) => (
           <li key={href}>
             <Link
               href={href}
@@ -53,11 +55,11 @@ export function SideNav() {
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
                 "transition-colors duration-150",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                isActive(href)
+                isActive(href, exact)
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
-              aria-current={isActive(href) ? "page" : undefined}
+              aria-current={isActive(href, exact) ? "page" : undefined}
             >
               <Icon className="h-4 w-4 flex-shrink-0" aria-hidden />
               {label}
@@ -66,10 +68,8 @@ export function SideNav() {
         ))}
       </ul>
 
-      {/* Divider */}
       <div className="my-2 border-t border-border" role="separator" />
 
-      {/* Secondary nav */}
       <ul className="space-y-0.5" role="list">
         {SECONDARY_NAV.map(({ href, label, icon: Icon }) => (
           <li key={href}>
@@ -79,11 +79,11 @@ export function SideNav() {
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
                 "transition-colors duration-150",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                isActive(href)
+                pathname.startsWith(href)
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
-              aria-current={isActive(href) ? "page" : undefined}
+              aria-current={pathname.startsWith(href) ? "page" : undefined}
             >
               <Icon className="h-4 w-4 flex-shrink-0" aria-hidden />
               {label}
@@ -92,7 +92,6 @@ export function SideNav() {
         ))}
       </ul>
 
-      {/* Settings — bottom */}
       <div className="mt-auto">
         <Link
           href="/settings"
@@ -100,11 +99,11 @@ export function SideNav() {
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
             "transition-colors duration-150",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-            isActive("/settings")
+            pathname === "/settings"
               ? "bg-primary/10 text-primary"
               : "text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
-          aria-current={isActive("/settings") ? "page" : undefined}
+          aria-current={pathname === "/settings" ? "page" : undefined}
         >
           <Settings className="h-4 w-4 flex-shrink-0" aria-hidden />
           Settings

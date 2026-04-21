@@ -14,6 +14,21 @@ const taskInclude = {
 
 // ── Queries ──────────────────────────────────────────────────────────────────
 
+export async function getDashboardStats() {
+  const now = new Date();
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(now); weekEnd.setDate(now.getDate() + (7 - now.getDay())); weekEnd.setHours(23, 59, 59, 999);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+  const [overdue, dueThisWeek, dueThisMonth] = await Promise.all([
+    prisma.task.count({ where: { dueDate: { lt: todayStart }, status: { in: ["TODO", "IN_PROGRESS"] } } }),
+    prisma.task.count({ where: { dueDate: { gte: todayStart, lte: weekEnd }, status: { not: "CANCELLED" } } }),
+    prisma.task.count({ where: { dueDate: { gte: todayStart, lte: monthEnd }, status: { not: "CANCELLED" } } }),
+  ]);
+
+  return { overdue, dueThisWeek, dueThisMonth };
+}
+
 export async function getTasks(filters: TaskFilters = {}) {
   const where: Record<string, unknown> = {};
 

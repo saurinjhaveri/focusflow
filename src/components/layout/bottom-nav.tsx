@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, CheckSquare, Users, Bell } from "lucide-react";
+import { LayoutDashboard, CheckSquare, CalendarDays, Users, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { href: "/",          label: "Today",    icon: CheckSquare  },
-  { href: "/weekly",    label: "Week",     icon: CalendarDays },
-  { href: "/team",      label: "Team",     icon: Users        },
-  { href: "/followups", label: "Follow-ups", icon: Bell       },
+  { href: "/",          label: "Home",    icon: LayoutDashboard, exact: true  },
+  { href: "/today",     label: "Today",   icon: CheckSquare,     exact: true  },
+  { href: "/weekly",    label: "Week",    icon: CalendarDays,    exact: false },
+  { href: "/team",      label: "Team",    icon: Users,           exact: false },
+  { href: "/followups", label: "Follow",  icon: Bell,            exact: false },
 ] as const;
 
 export function BottomNav() {
@@ -22,38 +23,24 @@ export function BottomNav() {
       aria-label="Main navigation"
     >
       <ul className="flex h-16 items-stretch" role="list">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const isActive =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+        {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => {
+          const isActive = exact ? pathname === href : pathname.startsWith(href);
           return (
             <li key={href} className="flex-1">
               <Link
                 href={href}
                 className={cn(
-                  "flex h-full flex-col items-center justify-center gap-0.5 px-2",
+                  "relative flex h-full flex-col items-center justify-center gap-0.5 px-1",
                   "text-xs font-medium transition-colors duration-150",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                 )}
                 aria-current={isActive ? "page" : undefined}
               >
-                <Icon
-                  className={cn(
-                    "h-5 w-5 transition-transform duration-150",
-                    isActive && "scale-110"
-                  )}
-                  aria-hidden
-                />
-                <span className={cn("text-[10px]", isActive && "font-semibold")}>
-                  {label}
-                </span>
+                <Icon className={cn("h-5 w-5 transition-transform duration-150", isActive && "scale-110")} aria-hidden />
+                <span className={cn("text-[10px]", isActive && "font-semibold")}>{label}</span>
                 {isActive && (
-                  <span
-                    className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary"
-                    aria-hidden
-                  />
+                  <span className="absolute bottom-0 h-0.5 w-8 rounded-full bg-primary" aria-hidden />
                 )}
               </Link>
             </li>

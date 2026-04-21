@@ -63,16 +63,17 @@ export class RuleBasedParser implements IParser {
       if (followUpDate) confidence += 0.1;
     }
 
-    // When input starts with "follow up", the date belongs to the follow-up,
-    // not the task due date — promote dueDate → followUpDate and clear dueDate
+    // When input starts with "follow up", the date is both the follow-up date
+    // and the task due date so it shows in Today/Weekly/Monthly views too
     if (/^\s*(?:follow[- ]?up|followup|f\/u)\b/i.test(input)) {
       if (!followUpDate && dueDate) {
         followUpDate = dueDate;
-        dueDate = undefined;
       } else if (!followUpDate) {
         followUpDate = new Date();
         followUpDate.setHours(9, 0, 0, 0);
       }
+      // Always keep dueDate in sync with followUpDate
+      dueDate = followUpDate;
     }
 
     // ── Extract priority ──────────────────────────────────────────────────

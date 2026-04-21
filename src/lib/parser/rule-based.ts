@@ -27,9 +27,9 @@ const PRIORITY_PATTERNS: [RegExp, Priority][] = [
   [/\b(?:low[- ]?priority|whenever|low|not urgent)\b/i, "LOW"],
 ];
 
-// Matches "call/email/ping/message/meet/talk to/ask Name"
+// Matches "call/email/ping/message/meet/talk to/ask Name" — case-insensitive name
 const PERSON_REGEX =
-  /\b(?:call|email|ping|message|msg|meet(?:ing)? with|talk to|speak(?:ing)? to|contact|update|remind|ask|notify|with)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b/;
+  /\b(?:call|email|ping|message|msg|meet(?:ing)? with|talk to|speak(?:ing)? to|contact|update|remind|ask|notify|with)\s+([A-Za-z][a-zA-Z]*(?:\s+[A-Za-z][a-zA-Z]*)?)\b/i;
 
 const TAG_REGEX = /#([a-zA-Z][a-zA-Z0-9_-]*)/g;
 

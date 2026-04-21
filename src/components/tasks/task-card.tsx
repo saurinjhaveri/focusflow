@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { ChevronDown, ChevronUp, Clock, Bell, MoreHorizontal, Trash2, UserPlus } from "lucide-react";
 import { TaskStatusToggle } from "./task-status-toggle";
 import { PriorityDot } from "@/components/ui/priority-badge";
@@ -23,7 +23,9 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [persons, setPersons] = useState<PersonOption[]>([]);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
   const [isPending, startTransition] = useTransition();
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
 
   const isDone = task.status === "DONE";
   const overdueDate = task.dueDate && isOverdue(task.dueDate) && !isDone;
@@ -96,10 +98,18 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
 
               <div className="relative">
                 <Button
+                  ref={menuBtnRef}
                   variant="ghost"
                   size="icon-sm"
                   className="h-7 w-7 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                  onClick={() => { setShowMenu((v) => !v); setShowAssign(false); }}
+                  onClick={() => {
+                    if (!showMenu && menuBtnRef.current) {
+                      const r = menuBtnRef.current.getBoundingClientRect();
+                      setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+                    }
+                    setShowMenu((v) => !v);
+                    setShowAssign(false);
+                  }}
                   aria-label="Task options"
                   aria-expanded={showMenu}
                 >
@@ -108,8 +118,8 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
 
                 {showMenu && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => { setShowMenu(false); setShowAssign(false); }} aria-hidden />
-                    <div className="absolute right-0 top-8 z-20 min-w-[160px] rounded-lg border border-border bg-card shadow-lg py-1 animate-fade-in">
+                    <div className="fixed inset-0 z-40" onClick={() => { setShowMenu(false); setShowAssign(false); }} aria-hidden />
+                    <div className="fixed z-50 min-w-[160px] rounded-lg border border-border bg-card shadow-lg py-1 animate-fade-in" style={{ top: menuPos.top, right: menuPos.right }}>
                       {!showAssign ? (
                         <>
                           <button

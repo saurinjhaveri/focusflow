@@ -18,7 +18,7 @@ export default async function WeeklyPage() {
   const windowEnd = new Date(weekEnd);
   windowEnd.setDate(weekEnd.getDate() + 7);
 
-  const tasks = await getWeeklyTasks(windowStart);
+  const tasks = await getWeeklyTasks(windowStart, windowEnd);
 
   return (
     <PageWrapper>

@@ -67,14 +67,17 @@ export async function getTodayTasks() {
   return { overdue, today };
 }
 
-export async function getWeeklyTasks(weekStart: Date) {
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-  weekEnd.setHours(23, 59, 59, 999);
+export async function getWeeklyTasks(weekStart: Date, weekEnd?: Date) {
+  const end = weekEnd ?? (() => {
+    const e = new Date(weekStart);
+    e.setDate(weekStart.getDate() + 6);
+    e.setHours(23, 59, 59, 999);
+    return e;
+  })();
 
   return prisma.task.findMany({
     where: {
-      dueDate: { gte: weekStart, lte: weekEnd },
+      dueDate: { gte: weekStart, lte: end },
       status: { not: "CANCELLED" },
     },
     include: taskInclude,
@@ -161,10 +164,11 @@ export async function createTaskFromText(raw: string) {
 
   let personId: string | null = null;
   if (parsed.personName) {
-    const person = await prisma.person.findFirst({
-      where: { name: { equals: parsed.personName } },
-    });
-    personId = person?.id ?? null;
+    const allPersons = await prisma.person.findMany({ select: { id: true, name: true } });
+    const match = allPersons.find(
+      (p) => p.name.toLowerCase() === parsed.personName!.toLowerCase()
+    );
+    personId = match?.id ?? null;
   }
 
   return createTask({

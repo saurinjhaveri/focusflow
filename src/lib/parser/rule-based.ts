@@ -62,6 +62,11 @@ export class RuleBasedParser implements IParser {
       followUpDate = resolveRelativeDate(followUpMatch[1]);
       if (followUpDate) confidence += 0.1;
     }
+    // If the input starts with "follow up" but no date was found, default to today
+    if (!followUpDate && /^\s*(?:follow[- ]?up|followup|f\/u)\b/i.test(input)) {
+      followUpDate = new Date();
+      followUpDate.setHours(9, 0, 0, 0);
+    }
 
     // ── Extract priority ──────────────────────────────────────────────────
     let priority: Priority | undefined;

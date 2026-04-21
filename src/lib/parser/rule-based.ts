@@ -91,11 +91,26 @@ export class RuleBasedParser implements IParser {
       }
     }
 
-    // ── Extract person name ───────────────────────────────────────────────
+    // ── Extract person names (supports multiple: "Mitul and Jay") ─────────
     let personName: string | undefined;
-    const personMatch = input.match(PERSON_REGEX) ?? input.match(FOLLOWUP_PERSON_REGEX);
-    if (personMatch) {
-      personName = personMatch[1];
+    let personNames: string[] = [];
+
+    const firstMatch = input.match(PERSON_REGEX) ?? input.match(FOLLOWUP_PERSON_REGEX);
+    if (firstMatch) {
+      // From the match position, look for "Name and Name" or "Name, Name" pattern
+      const afterVerb = input.slice(firstMatch.index! + firstMatch[0].length - firstMatch[1].length);
+      const multiRe = /([A-Za-z]{2,})(?:\s*(?:,|and)\s*([A-Za-z]{2,}))*\b/gi;
+      const multiMatch = afterVerb.match(/^([A-Za-z]{2,})(?:\s*(?:,|and)\s+([A-Za-z]{2,}))*/i);
+      if (multiMatch) {
+        // Extract all individual names from "Name, Name and Name"
+        const nameStr = multiMatch[0];
+        const extracted = nameStr.split(/\s*(?:,|and)\s*/i).map(n => n.trim()).filter(n => n.length >= 2);
+        personNames = extracted;
+        personName = extracted[0];
+      } else {
+        personName = firstMatch[1];
+        personNames = [firstMatch[1]];
+      }
       confidence += 0.1;
     }
 
@@ -121,11 +136,12 @@ export class RuleBasedParser implements IParser {
     if (title.length > 0) confidence += 0.1;
 
     return {
-      title: title || input, // fallback to raw if stripping leaves empty
+      title: title || input,
       dueDate,
       followUpDate,
       priority,
       personName,
+      personNames: personNames.length > 0 ? personNames : undefined,
       tags: tags.length > 0 ? tags : undefined,
       confidence: Math.min(confidence, 1),
     };

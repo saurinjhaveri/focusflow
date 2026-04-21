@@ -6,6 +6,7 @@ export interface ParsedTask {
   followUpDate?: Date;
   priority?: Priority;
   personName?: string;
+  personNames?: string[];  // all detected names (superset of personName)
   tags?: string[];
   confidence: number;
 }

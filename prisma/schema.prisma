@@ -27,11 +27,12 @@ enum TaskStatus {
 
 /// A person / team member used for color-coded task assignment
 model Person {
-  id        String   @id @default(cuid())
-  name      String
-  color     String   // hex color, e.g. "#0D9488"
-  tasks     Task[]
-  createdAt DateTime @default(now())
+  id          String       @id @default(cuid())
+  name        String
+  color       String
+  tasks       Task[]       @relation("PrimaryPerson")
+  taskPersons TaskPerson[]
+  createdAt   DateTime     @default(now())
 
   @@map("persons")
 }
@@ -57,7 +58,8 @@ model Task {
   completedAt DateTime?
   notes       String?
   personId    String?
-  person      Person?    @relation(fields: [personId], references: [id], onDelete: SetNull)
+  person      Person?      @relation("PrimaryPerson", fields: [personId], references: [id], onDelete: SetNull)
+  taskPersons TaskPerson[]
   tags        TaskTag[]
   followUps   FollowUp[]
   createdAt   DateTime   @default(now())
@@ -67,6 +69,18 @@ model Task {
   @@index([dueDate])
   @@index([personId])
   @@map("tasks")
+}
+
+/// Junction table: Task ↔ Person (many-to-many)
+model TaskPerson {
+  taskId   String
+  personId String
+  task     Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  person   Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, personId])
+  @@index([personId])
+  @@map("task_persons")
 }
 
 /// Junction table: Task ↔ Tag (many-to-many)

@@ -8,6 +8,7 @@ import { parser } from "@/lib/parser";
 // ── Shared include for consistent shape ──────────────────────────────────────
 const taskInclude = {
   person: true,
+  taskPersons: { include: { person: true } },
   tags: { include: { tag: true } },
   followUps: { orderBy: { scheduledAt: "asc" as const } },
 } as const;
@@ -117,15 +118,30 @@ export async function getMonthlyTasks(year: number, month: number) {
 export async function getTasksByPerson() {
   const persons = await prisma.person.findMany({
     include: {
+      // primary-person tasks
       tasks: {
         where: { status: { not: "CANCELLED" } },
         include: taskInclude,
         orderBy: [{ priority: "desc" }, { dueDate: "asc" }],
       },
+      // additional-person tasks via join table
+      taskPersons: {
+        include: {
+          task: { include: taskInclude },
+        },
+      },
     },
     orderBy: { name: "asc" },
   });
-  return persons;
+
+  // Merge both sets, deduplicate by task id
+  return persons.map((p) => {
+    const primaryIds = new Set(p.tasks.map(t => t.id));
+    const extra = p.taskPersons
+      .map(tp => tp.task)
+      .filter(t => t && t.status !== "CANCELLED" && !primaryIds.has(t.id));
+    return { ...p, tasks: [...p.tasks, ...(extra as any[])] };
+  });
 }
 
 export async function getTaskById(id: string) {
@@ -178,15 +194,20 @@ export async function createTaskFromText(raw: string) {
   const parsed = parser.parse(raw);
 
   let personId: string | null = null;
-  if (parsed.personName) {
+  let additionalPersonIds: string[] = [];
+
+  if (parsed.personNames && parsed.personNames.length > 0) {
     const allPersons = await prisma.person.findMany({ select: { id: true, name: true } });
-    const match = allPersons.find(
-      (p) => p.name.toLowerCase() === parsed.personName!.toLowerCase()
-    );
-    personId = match?.id ?? null;
+    const matched = parsed.personNames
+      .map(name => allPersons.find(p => p.name.toLowerCase() === name.toLowerCase()))
+      .filter(Boolean) as { id: string; name: string }[];
+    if (matched.length > 0) {
+      personId = matched[0].id;
+      additionalPersonIds = matched.slice(1).map(p => p.id);
+    }
   }
 
-  return createTask({
+  const task = await createTask({
     title: parsed.title,
     rawInput: raw,
     priority: parsed.priority ?? "MEDIUM",
@@ -195,6 +216,19 @@ export async function createTaskFromText(raw: string) {
     tagNames: parsed.tags,
     followUpDate: parsed.followUpDate,
   });
+
+  // Link additional persons via join table
+  if (additionalPersonIds.length > 0) {
+    for (const pid of additionalPersonIds) {
+      await prisma.taskPerson.upsert({
+        where: { taskId_personId: { taskId: task.id, personId: pid } },
+        create: { taskId: task.id, personId: pid },
+        update: {},
+      });
+    }
+  }
+
+  return task;
 }
 
 export async function updateTask(

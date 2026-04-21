@@ -35,7 +35,7 @@ export function PersonGroup({
   return (
     <section
       aria-labelledby={`person-group-${personId}`}
-      className="rounded-xl border overflow-hidden"
+      className="rounded-xl border"
       style={{ borderColor: `${color}30` }}
     >
       {/* Color-coded header */}

@@ -24,7 +24,7 @@ export function UnassignedGroup({ tasks }: UnassignedGroupProps) {
   return (
     <section
       aria-labelledby="unassigned-group"
-      className="rounded-xl border border-border overflow-hidden"
+      className="rounded-xl border border-border"
     >
       <button
         onClick={() => setOpen((v) => !v)}

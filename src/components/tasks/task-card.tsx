@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useTransition, useRef } from "react";
-import { createPortal } from "react-dom";
 import { ChevronDown, ChevronUp, Clock, Bell, MoreHorizontal, Trash2, UserPlus } from "lucide-react";
 import { TaskStatusToggle } from "./task-status-toggle";
 import { PriorityDot } from "@/components/ui/priority-badge";
@@ -24,15 +23,10 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [persons, setPersons] = useState<PersonOption[]>([]);
-  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
-  const [mounted, setMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const menuBtnRef = useRef<HTMLButtonElement>(null);
 
   const isDone = task.status === "DONE";
   const pendingFollowUps = task.followUps.filter((f) => !f.done);
-
-  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     if (!showAssign) return;
@@ -41,15 +35,6 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
       .then((data) => { if (Array.isArray(data.persons)) setPersons(data.persons); })
       .catch(() => {});
   }, [showAssign]);
-
-  function openMenu() {
-    if (menuBtnRef.current) {
-      const r = menuBtnRef.current.getBoundingClientRect();
-      setMenuPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
-    }
-    setShowMenu(true);
-    setShowAssign(false);
-  }
 
   function closeMenu() {
     setShowMenu(false);
@@ -79,61 +64,6 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
 
   const dateLabel = dueDateLabel();
 
-  const menuDropdown = mounted && showMenu ? createPortal(
-    <>
-      <div className="fixed inset-0 z-40" onClick={closeMenu} aria-hidden />
-      <div
-        className="fixed z-50 min-w-[160px] rounded-lg border border-border bg-card shadow-lg py-1 animate-fade-in"
-        style={{ top: menuPos.top, right: menuPos.right }}
-      >
-        {!showAssign ? (
-          <>
-            <button
-              onClick={() => setShowAssign(true)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
-            >
-              <UserPlus className="h-3.5 w-3.5" aria-hidden />
-              Assign to…
-            </button>
-            <button
-              onClick={handleDelete}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/5 transition-colors"
-            >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden />
-              Delete task
-            </button>
-          </>
-        ) : (
-          <>
-            <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">Assign to</p>
-            {task.person && (
-              <button
-                onClick={() => handleAssign(null)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
-              >
-                Unassign
-              </button>
-            )}
-            {persons.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => handleAssign(p.id)}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
-              >
-                <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
-                {p.name}
-              </button>
-            ))}
-            {persons.length === 0 && (
-              <p className="px-3 py-2 text-xs text-muted-foreground">No people added yet</p>
-            )}
-          </>
-        )}
-      </div>
-    </>,
-    document.body
-  ) : null;
-
   return (
     <div
       className={cn(
@@ -161,18 +91,70 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
 
             <div className="flex items-center gap-1 flex-shrink-0">
               <PriorityDot priority={task.priority} />
-              <Button
-                ref={menuBtnRef}
-                variant="ghost"
-                size="icon-sm"
-                className="h-7 w-7 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                onClick={openMenu}
-                aria-label="Task options"
-                aria-expanded={showMenu}
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
-              </Button>
-              {menuDropdown}
+
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  onClick={() => { setShowMenu((v) => !v); setShowAssign(false); }}
+                  aria-label="Task options"
+                  aria-expanded={showMenu}
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
+                </Button>
+
+                {showMenu && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={closeMenu} aria-hidden />
+                    <div className="absolute right-0 top-8 z-20 min-w-[160px] rounded-lg border border-border bg-card shadow-lg py-1 animate-fade-in">
+                      {!showAssign ? (
+                        <>
+                          <button
+                            onClick={() => setShowAssign(true)}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                          >
+                            <UserPlus className="h-3.5 w-3.5" aria-hidden />
+                            Assign to…
+                          </button>
+                          <button
+                            onClick={handleDelete}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/5 transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                            Delete task
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <p className="px-3 py-1.5 text-xs font-medium text-muted-foreground">Assign to</p>
+                          {task.person && (
+                            <button
+                              onClick={() => handleAssign(null)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+                            >
+                              Unassign
+                            </button>
+                          )}
+                          {persons.map((p) => (
+                            <button
+                              key={p.id}
+                              onClick={() => handleAssign(p.id)}
+                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                            >
+                              <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
+                              {p.name}
+                            </button>
+                          ))}
+                          {persons.length === 0 && (
+                            <p className="px-3 py-2 text-xs text-muted-foreground">No people added yet</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

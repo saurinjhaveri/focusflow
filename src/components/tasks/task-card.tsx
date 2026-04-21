@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useRef } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { ChevronDown, ChevronUp, Clock, Bell, MoreHorizontal, Trash2, UserPlus } from "lucide-react";
 import { TaskStatusToggle } from "./task-status-toggle";
 import { PriorityDot } from "@/components/ui/priority-badge";
@@ -54,7 +54,7 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
   function dueDateLabel() {
     if (!task.dueDate) return null;
     if (isOverdue(task.dueDate) && !isDone)
-      return { text: `Overdue · ${formatDate(task.dueDate)}`, cls: "text-accent font-medium" };
+      return { text: `Overdue · ${formatDate(task.dueDate)}`, cls: "text-destructive font-medium" };
     if (isToday(task.dueDate))
       return { text: "Today", cls: "text-primary font-medium" };
     if (isTomorrow(task.dueDate))
@@ -69,13 +69,14 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
       className={cn(
         "group relative rounded-xl border bg-card transition-shadow duration-150",
         "hover:shadow-sm",
-        variant === "overdue" ? "border-accent/30 bg-accent/[0.02]" : "border-border",
+        variant === "overdue" ? "border-destructive/25 bg-destructive/[0.02]" : "border-border",
         isDone && "opacity-60",
         isPending && "opacity-50 pointer-events-none"
       )}
     >
+      {/* Overdue left accent — 3px wide, full red, unmissable */}
       {variant === "overdue" && (
-        <span className="absolute left-0 top-3 bottom-3 w-0.5 rounded-full bg-accent" aria-hidden />
+        <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-destructive" aria-hidden />
       )}
 
       <div className="flex items-start gap-3 p-3.5">
@@ -93,33 +94,34 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
               <PriorityDot priority={task.priority} />
 
               <div className="relative">
+                {/* h-9 w-9 = 36px hit area. Always visible on mobile; fades to hover on md+ */}
                 <Button
                   variant="ghost"
-                  size="icon-sm"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  size="icon"
+                  className="h-9 w-9 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity"
                   onClick={() => { setShowMenu((v) => !v); setShowAssign(false); }}
                   aria-label="Task options"
                   aria-expanded={showMenu}
                 >
-                  <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
+                  <MoreHorizontal className="h-4 w-4" aria-hidden />
                 </Button>
 
                 {showMenu && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={closeMenu} aria-hidden />
-                    <div className="absolute right-0 top-8 z-20 min-w-[160px] rounded-lg border border-border bg-card shadow-lg py-1 animate-fade-in">
+                    <div className="absolute right-0 top-9 z-20 min-w-[160px] rounded-lg border border-border bg-card shadow-lg py-1 animate-fade-in">
                       {!showAssign ? (
                         <>
                           <button
                             onClick={() => setShowAssign(true)}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                            className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors"
                           >
                             <UserPlus className="h-3.5 w-3.5" aria-hidden />
                             Assign to…
                           </button>
                           <button
                             onClick={handleDelete}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/5 transition-colors"
+                            className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-destructive hover:bg-destructive/5 transition-colors"
                           >
                             <Trash2 className="h-3.5 w-3.5" aria-hidden />
                             Delete task
@@ -131,7 +133,7 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
                           {task.person && (
                             <button
                               onClick={() => handleAssign(null)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+                              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
                             >
                               Unassign
                             </button>
@@ -140,7 +142,7 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
                             <button
                               key={p.id}
                               onClick={() => handleAssign(p.id)}
-                              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
+                              className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors"
                             >
                               <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: p.color }} />
                               {p.name}

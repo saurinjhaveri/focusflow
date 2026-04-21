@@ -6,6 +6,7 @@ import { ParsePreview } from "./parse-preview";
 import { Button } from "@/components/ui/button";
 import { createTaskFromText } from "@/lib/actions/tasks";
 import { useCaptureStore } from "@/store/capture-store";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import type { ParsedTask } from "@/lib/parser/types";
 
@@ -34,6 +35,7 @@ export function QuickCapture({
   const inputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
   const [parsedPreview, setParsedPreview] = useState<ParsedTask | null>(null);
+  const { toast } = useToast();
 
   const { rawInput, setRawInput, reset } = useCaptureStore();
   const debouncedInput = useDebounced(rawInput, 350);
@@ -65,11 +67,12 @@ export function QuickCapture({
         await createTaskFromText(text);
         reset();
         setParsedPreview(null);
+        toast("Task added", "success");
         onSuccess?.();
         inputRef.current?.focus();
       });
     },
-    [rawInput, isPending, reset, onSuccess]
+    [rawInput, isPending, reset, onSuccess, toast]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -88,7 +91,7 @@ export function QuickCapture({
       <form onSubmit={handleSubmit} noValidate>
         <div
           className={cn(
-            "flex items-center gap-2 rounded-xl border bg-card px-3 py-2.5",
+            "flex items-center gap-2 rounded-xl border bg-card px-3 py-2",
             "transition-all duration-150",
             hasInput
               ? "border-primary/40 shadow-sm shadow-primary/10"
@@ -114,7 +117,7 @@ export function QuickCapture({
             autoComplete="off"
             autoCapitalize="sentences"
             className={cn(
-              "flex-1 bg-transparent text-sm text-foreground outline-none min-w-0",
+              "flex-1 bg-transparent text-sm text-foreground outline-none min-w-0 py-1.5",
               "placeholder:text-muted-foreground/60"
             )}
             aria-label="Quick task capture — describe your task in plain English"
@@ -122,24 +125,25 @@ export function QuickCapture({
 
           {hasInput && (
             <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Touch targets: h-9 w-9 (36px) */}
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
                 onClick={() => { reset(); setParsedPreview(null); }}
                 aria-label="Clear input"
-                className="h-7 w-7 text-muted-foreground"
+                className="h-9 w-9 text-muted-foreground"
               >
                 <X className="h-3.5 w-3.5" aria-hidden />
               </Button>
               <Button
                 type="submit"
-                size="icon-sm"
+                size="icon"
                 loading={isPending}
                 aria-label="Add task"
-                className="h-7 w-7"
+                className="h-9 w-9"
               >
-                {!isPending && <ArrowRight className="h-3.5 w-3.5" aria-hidden />}
+                {!isPending && <ArrowRight className="h-4 w-4" aria-hidden />}
               </Button>
             </div>
           )}

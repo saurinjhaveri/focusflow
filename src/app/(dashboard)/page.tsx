@@ -25,27 +25,24 @@ export default async function DashboardPage() {
       count: stats.overdue,
       href: "/today",
       icon: AlertTriangle,
-      urgent: stats.overdue > 0,
       bg: stats.overdue > 0 ? "bg-destructive/8 border-destructive/20" : "bg-card border-border",
       iconColor: stats.overdue > 0 ? "text-destructive" : "text-muted-foreground",
       countColor: stats.overdue > 0 ? "text-destructive" : "text-foreground",
     },
     {
-      label: "Due This Week",
+      label: "This Week",
       count: stats.dueThisWeek,
       href: "/weekly",
       icon: CalendarDays,
-      urgent: false,
       bg: "bg-card border-border",
       iconColor: "text-primary",
       countColor: "text-foreground",
     },
     {
-      label: "Due This Month",
+      label: "This Month",
       count: stats.dueThisMonth,
       href: "/monthly",
       icon: CalendarRange,
-      urgent: false,
       bg: "bg-card border-border",
       iconColor: "text-secondary",
       countColor: "text-foreground",
@@ -67,24 +64,25 @@ export default async function DashboardPage() {
 
       {/* Stat cards */}
       <div className="mb-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Overview</h2>
-        <div className="grid grid-cols-3 gap-3">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Overview</h2>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {cards.map(({ label, count, href, icon: Icon, bg, iconColor, countColor }) => (
             <Link
               key={label}
               href={href}
               className={cn(
-                "group flex flex-col gap-3 rounded-xl border p-4 transition-shadow hover:shadow-md",
+                "group flex flex-col gap-2 rounded-xl border p-3 sm:p-4 transition-all duration-150",
+                "hover:shadow-md active:scale-[0.98]",
                 bg
               )}
             >
               <div className="flex items-center justify-between">
                 <Icon className={cn("h-4 w-4", iconColor)} aria-hidden />
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" aria-hidden />
+                <ArrowRight className="h-3 w-3 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" aria-hidden />
               </div>
               <div>
-                <p className={cn("text-2xl font-bold tabular-nums", countColor)}>{count}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+                <p className={cn("text-2xl font-bold tabular-nums leading-none", countColor)}>{count}</p>
+                <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{label}</p>
               </div>
             </Link>
           ))}

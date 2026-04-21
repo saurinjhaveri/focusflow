@@ -48,6 +48,76 @@
   --radius-2xl: 1.25rem;
 }
 
+/* ── Ocean theme ──────────────────────────────────────────── */
+[data-theme="ocean"] {
+  --color-primary:              #2563EB;
+  --color-primary-hover:        #1D4ED8;
+  --color-secondary:            #3B82F6;
+  --color-secondary-foreground: #0F172A;
+  --color-accent:               #059669;
+  --color-accent-hover:         #047857;
+  --color-background:           #F0F7FF;
+  --color-foreground:           #1E3A5F;
+  --color-card:                 #FFFFFF;
+  --color-card-foreground:      #1E3A5F;
+  --color-muted:                #E8F0FE;
+  --color-border:               #BFDBFE;
+  --color-ring:                 #2563EB;
+  --color-medium:               #2563EB;
+}
+
+/* ── Ember theme ──────────────────────────────────────────── */
+[data-theme="ember"] {
+  --color-primary:              #7C3AED;
+  --color-primary-hover:        #6D28D9;
+  --color-secondary:            #8B5CF6;
+  --color-secondary-foreground: #FFFFFF;
+  --color-accent:               #EA580C;
+  --color-accent-hover:         #C2410C;
+  --color-background:           #FAF5FF;
+  --color-foreground:           #2E1065;
+  --color-card:                 #FFFFFF;
+  --color-card-foreground:      #2E1065;
+  --color-muted:                #F0E6FF;
+  --color-border:               #DDD6FE;
+  --color-ring:                 #7C3AED;
+  --color-medium:               #7C3AED;
+}
+
+/* ── Dark mode (system preference) ───────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root, [data-theme="teal"] {
+    --color-background:      #0B1F1D;
+    --color-foreground:      #CCFBF1;
+    --color-card:            #132E2B;
+    --color-card-foreground: #CCFBF1;
+    --color-muted:           #1A3330;
+    --color-muted-foreground:#94A3B8;
+    --color-border:          rgba(13, 148, 136, 0.18);
+    --color-input:           #1A3330;
+  }
+  [data-theme="ocean"] {
+    --color-background:      #0A1628;
+    --color-foreground:      #DBEAFE;
+    --color-card:            #111F3A;
+    --color-card-foreground: #DBEAFE;
+    --color-muted:           #172645;
+    --color-muted-foreground:#94A3B8;
+    --color-border:          rgba(37, 99, 235, 0.18);
+    --color-input:           #172645;
+  }
+  [data-theme="ember"] {
+    --color-background:      #130824;
+    --color-foreground:      #EDE9FE;
+    --color-card:            #1C0F35;
+    --color-card-foreground: #EDE9FE;
+    --color-muted:           #1C0F35;
+    --color-muted-foreground:#94A3B8;
+    --color-border:          rgba(124, 58, 237, 0.18);
+    --color-input:           #1C0F35;
+  }
+}
+
 /* ── Base resets ──────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;

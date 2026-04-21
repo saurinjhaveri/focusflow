@@ -191,21 +191,13 @@ export async function createTask(data: {
 }
 
 export async function createTaskFromText(raw: string) {
-  const parsed = parser.parse(raw);
+  const [parsed, { persons }] = await Promise.all([
+    Promise.resolve(parser.parse(raw)),
+    detectPersonsInText(raw),
+  ]);
 
-  let personId: string | null = null;
-  let additionalPersonIds: string[] = [];
-
-  if (parsed.personNames && parsed.personNames.length > 0) {
-    const allPersons = await prisma.person.findMany({ select: { id: true, name: true } });
-    const matched = parsed.personNames
-      .map(name => allPersons.find(p => p.name.toLowerCase() === name.toLowerCase()))
-      .filter(Boolean) as { id: string; name: string }[];
-    if (matched.length > 0) {
-      personId = matched[0].id;
-      additionalPersonIds = matched.slice(1).map(p => p.id);
-    }
-  }
+  const personId = persons[0]?.id ?? null;
+  const additionalPersonIds = persons.slice(1).map(p => p.id);
 
   const task = await createTask({
     title: parsed.title,
@@ -270,6 +262,26 @@ export async function deleteTask(id: string) {
   revalidatePath("/");
   revalidatePath("/weekly");
   revalidatePath("/team");
+}
+
+// ── Person helpers ────────────────────────────────────────────────────────────
+
+const MAX_TASK_PERSONS = 4;
+
+/**
+ * Scan raw text for any known team member names (word-boundary, case-insensitive).
+ * Returns matched persons capped at MAX_TASK_PERSONS, in the order they appear in DB.
+ */
+export async function detectPersonsInText(raw: string) {
+  const allPersons = await prisma.person.findMany({ select: { id: true, name: true } });
+  const matched = allPersons.filter(({ name }) => {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${escaped}\\b`, "i").test(raw);
+  });
+  return {
+    persons: matched.slice(0, MAX_TASK_PERSONS),
+    limitExceeded: matched.length > MAX_TASK_PERSONS,
+  };
 }
 
 // ── Tag helpers ───────────────────────────────────────────────────────────────

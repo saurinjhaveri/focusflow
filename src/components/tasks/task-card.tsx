@@ -33,7 +33,7 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
     if (!showAssign) return;
     fetch("/api/persons")
       .then((r) => r.json())
-      .then(setPersons)
+      .then((data) => { if (Array.isArray(data.persons)) setPersons(data.persons); })
       .catch(() => {});
   }, [showAssign]);
 

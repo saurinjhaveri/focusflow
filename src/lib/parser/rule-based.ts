@@ -27,10 +27,27 @@ const PRIORITY_PATTERNS: [RegExp, Priority][] = [
   [/\b(?:low[- ]?priority|whenever|low|not urgent)\b/i, "LOW"],
 ];
 
-// Match verb + single name word (any case). Single word avoids capturing
-// trailing prepositions like "on", "for", "about" as part of the name.
-const PERSON_REGEX =
-  /\b(?:call|email|ping|message|msg|meet(?:ing)? with|talk to|speak(?:ing)? to|contact|update|remind|ask|notify|with)\s+([A-Za-z]{2,})\b/i;
+const MAX_PERSONS = 4;
+
+// Match verb + first name. Broad verb list; false-positive names are filtered
+// in the server action when matched against real persons in the DB.
+const PERSON_REGEX = new RegExp(
+  "\\b(?:" +
+    "call|email|ping|message|msg|text|" +
+    "tell|inform|notify|brief|" +
+    "meet(?:ing)?(?:\\s+with)?|" +
+    "talk(?:ing)?(?:\\s+to)?|" +
+    "speak(?:ing)?(?:\\s+to)?|" +
+    "contact|update|remind|ask|" +
+    "sync(?:\\s+with)?|" +
+    "send(?:\\s+to)?|" +
+    "discuss(?:\\s+with)?|" +
+    "check(?:\\s+in)?(?:\\s+with)?|" +
+    "work\\s+with|coordinate\\s+with|align\\s+with|" +
+    "loop\\s+in|cc|invite|include|with" +
+  ")\\s+([A-Za-z]{2,})\\b",
+  "i"
+);
 
 // Specifically handles "follow up to/with/for Name" at the start of input
 const FOLLOWUP_PERSON_REGEX =
@@ -91,22 +108,32 @@ export class RuleBasedParser implements IParser {
       }
     }
 
-    // ── Extract person names (supports multiple: "Mitul and Jay") ─────────
+    // ── Extract person names (up to MAX_PERSONS) ─────────────────────────
     let personName: string | undefined;
     let personNames: string[] = [];
+    let personLimitWarning = false;
 
     const firstMatch = input.match(PERSON_REGEX) ?? input.match(FOLLOWUP_PERSON_REGEX);
     if (firstMatch) {
-      // From the match position, look for "Name and Name" or "Name, Name" pattern
+      // Slice to the start of the first captured name, then greedily match
+      // "Name [, Name]* [and Name]" — use \band\b so names like "Amanda"
+      // aren't split mid-word.
       const afterVerb = input.slice(firstMatch.index! + firstMatch[0].length - firstMatch[1].length);
-      const multiRe = /([A-Za-z]{2,})(?:\s*(?:,|and)\s*([A-Za-z]{2,}))*\b/gi;
-      const multiMatch = afterVerb.match(/^([A-Za-z]{2,})(?:\s*(?:,|and)\s+([A-Za-z]{2,}))*/i);
+      const multiMatch = afterVerb.match(
+        /^([A-Za-z]{2,})(?:\s*(?:,|\band\b)\s+[A-Za-z]{2,})*/i
+      );
       if (multiMatch) {
-        // Extract all individual names from "Name, Name and Name"
-        const nameStr = multiMatch[0];
-        const extracted = nameStr.split(/\s*(?:,|and)\s*/i).map(n => n.trim()).filter(n => n.length >= 2);
-        personNames = extracted;
-        personName = extracted[0];
+        const extracted = multiMatch[0]
+          .split(/\s*(?:,|\band\b)\s*/i)
+          .map(n => n.trim())
+          .filter(n => n.length >= 2);
+        if (extracted.length > MAX_PERSONS) {
+          personLimitWarning = true;
+          personNames = extracted.slice(0, MAX_PERSONS);
+        } else {
+          personNames = extracted;
+        }
+        personName = personNames[0];
       } else {
         personName = firstMatch[1];
         personNames = [firstMatch[1]];
@@ -142,6 +169,7 @@ export class RuleBasedParser implements IParser {
       priority,
       personName,
       personNames: personNames.length > 0 ? personNames : undefined,
+      personLimitWarning: personLimitWarning || undefined,
       tags: tags.length > 0 ? tags : undefined,
       confidence: Math.min(confidence, 1),
     };

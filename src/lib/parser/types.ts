@@ -6,7 +6,8 @@ export interface ParsedTask {
   followUpDate?: Date;
   priority?: Priority;
   personName?: string;
-  personNames?: string[];  // all detected names (superset of personName)
+  personNames?: string[];       // all detected names, capped at MAX_PERSONS
+  personLimitWarning?: boolean; // true when input named more than MAX_PERSONS people
   tags?: string[];
   confidence: number;
 }

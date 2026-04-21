@@ -10,11 +10,12 @@ interface ParsePreviewProps {
 }
 
 export function ParsePreview({ parsed, className }: ParsePreviewProps) {
+  const displayPersons = parsed.personNames ?? (parsed.personName ? [parsed.personName] : []);
   const hasDetails =
     parsed.dueDate ||
     parsed.followUpDate ||
     parsed.priority ||
-    parsed.personName ||
+    displayPersons.length > 0 ||
     (parsed.tags && parsed.tags.length > 0);
 
   return (
@@ -40,10 +41,10 @@ export function ParsePreview({ parsed, className }: ParsePreviewProps) {
           {parsed.priority && parsed.priority !== "MEDIUM" && (
             <PriorityBadge priority={parsed.priority} />
           )}
-          {parsed.personName && (
+          {displayPersons.length > 0 && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
               <User className="h-3 w-3" aria-hidden />
-              {parsed.personName}
+              {displayPersons.join(", ")}
             </span>
           )}
           {parsed.tags?.map((tag) => (
@@ -53,6 +54,14 @@ export function ParsePreview({ parsed, className }: ParsePreviewProps) {
             </span>
           ))}
         </div>
+      )}
+
+      {/* Person limit warning */}
+      {parsed.personLimitWarning && (
+        <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+          <AlertCircle className="h-3 w-3 flex-shrink-0" aria-hidden />
+          FocusFlow assigns tasks to a maximum of 4 people — extra names ignored.
+        </p>
       )}
 
       {/* Confidence indicator */}

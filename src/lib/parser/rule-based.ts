@@ -62,10 +62,17 @@ export class RuleBasedParser implements IParser {
       followUpDate = resolveRelativeDate(followUpMatch[1]);
       if (followUpDate) confidence += 0.1;
     }
-    // If the input starts with "follow up" but no date was found, default to today
-    if (!followUpDate && /^\s*(?:follow[- ]?up|followup|f\/u)\b/i.test(input)) {
-      followUpDate = new Date();
-      followUpDate.setHours(9, 0, 0, 0);
+
+    // When input starts with "follow up", the date belongs to the follow-up,
+    // not the task due date — promote dueDate → followUpDate and clear dueDate
+    if (/^\s*(?:follow[- ]?up|followup|f\/u)\b/i.test(input)) {
+      if (!followUpDate && dueDate) {
+        followUpDate = dueDate;
+        dueDate = undefined;
+      } else if (!followUpDate) {
+        followUpDate = new Date();
+        followUpDate.setHours(9, 0, 0, 0);
+      }
     }
 
     // ── Extract priority ──────────────────────────────────────────────────

@@ -1,10 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { AlertTriangle, CalendarDays, CalendarRange, ArrowRight } from "lucide-react";
+import { AlertTriangle, CalendarDays, CalendarRange, ArrowRight, Clock } from "lucide-react";
 import { PageWrapper } from "@/components/ui/page-wrapper";
 import { QuickCapture } from "@/components/capture/quick-capture";
-import { getDashboardStats } from "@/lib/actions/tasks";
+import { PriorityDot } from "@/components/ui/priority-badge";
+import { PersonBadge } from "@/components/persons/person-badge";
+import { getDashboardStats, getUpcomingTasks } from "@/lib/actions/tasks";
+import { formatDate, isToday, isTomorrow, isOverdue } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 function greeting() {
@@ -16,8 +19,16 @@ function dateStr() {
   return new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 }
 
+function upcomingDateLabel(dueDate: Date | null) {
+  if (!dueDate) return null;
+  if (isOverdue(dueDate)) return { text: `Overdue · ${formatDate(dueDate)}`, cls: "text-destructive" };
+  if (isToday(dueDate)) return { text: "Today", cls: "text-primary" };
+  if (isTomorrow(dueDate)) return { text: "Tomorrow", cls: "text-warning" };
+  return { text: formatDate(dueDate), cls: "text-muted-foreground" };
+}
+
 export default async function DashboardPage() {
-  const stats = await getDashboardStats();
+  const [stats, upcoming] = await Promise.all([getDashboardStats(), getUpcomingTasks(5)]);
 
   const cards = [
     {
@@ -63,7 +74,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="mb-2">
+      <div className="mb-6">
         <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Overview</h2>
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {cards.map(({ label, count, href, icon: Icon, bg, iconColor, countColor }) => (
@@ -86,6 +97,42 @@ export default async function DashboardPage() {
               </div>
             </Link>
           ))}
+        </div>
+      </div>
+
+      {/* Upcoming tasks */}
+      <div>
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Up Next</h2>
+        <div className="rounded-xl border border-border bg-card px-4 py-3">
+          {upcoming.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              No upcoming tasks with dates set.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {upcoming.map((task) => {
+                const label = upcomingDateLabel(task.dueDate);
+                return (
+                  <li key={task.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <PriorityDot priority={task.priority} />
+                    <p className="flex-1 min-w-0 text-sm text-foreground truncate">{task.title}</p>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {[
+                        ...(task.person ? [task.person] : []),
+                        ...(task.taskPersons ?? []).map(tp => tp.person).filter(p => p.id !== task.person?.id),
+                      ].map(p => <PersonBadge key={p.id} person={p} />)}
+                      {label && (
+                        <span className={cn("flex items-center gap-1 text-xs font-medium whitespace-nowrap", label.cls)}>
+                          <Clock className="h-3 w-3" aria-hidden />
+                          {label.text}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
     </PageWrapper>

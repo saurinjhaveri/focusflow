@@ -115,6 +115,21 @@ export async function getMonthlyTasks(year: number, month: number) {
   });
 }
 
+export async function getUpcomingTasks(limit = 5) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+
+  return prisma.task.findMany({
+    where: {
+      dueDate: { gte: start },
+      status: { in: ["TODO", "IN_PROGRESS"] },
+    },
+    include: taskInclude,
+    orderBy: [{ dueDate: "asc" }, { priority: "desc" }],
+    take: limit,
+  });
+}
+
 export async function getTasksByPerson() {
   const persons = await prisma.person.findMany({
     include: {

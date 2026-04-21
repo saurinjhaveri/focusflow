@@ -27,6 +27,8 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
 
   const isDone = task.status === "DONE";
   const pendingFollowUps = task.followUps.filter((f) => !f.done);
+  const additionalPersons = (task.taskPersons ?? []).map(tp => tp.person).filter(p => p.id !== task.person?.id);
+  const allPersons = task.person ? [task.person, ...additionalPersons] : additionalPersons;
 
   useEffect(() => {
     if (!showAssign) return;
@@ -167,7 +169,7 @@ export function TaskCard({ task, variant = "default" }: TaskCardProps) {
                 {dateLabel.text}
               </span>
             )}
-            {task.person && <PersonBadge person={task.person} />}
+            {allPersons.map(p => <PersonBadge key={p.id} person={p} />)}
             {pendingFollowUps.length > 0 && (
               <span className="flex items-center gap-1 text-xs text-primary bg-primary/8 rounded-full px-2 py-0.5">
                 <Bell className="h-3 w-3" aria-hidden />

@@ -35,6 +35,7 @@ export interface Task {
   notes?: string | null;
   personId?: string | null;
   person?: Person | null;
+  taskPersons: { person: Person }[];
   tags: Tag[];
   followUps: FollowUp[];
   createdAt: Date;

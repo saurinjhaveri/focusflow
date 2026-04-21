@@ -219,13 +219,9 @@ export async function createTaskFromText(raw: string) {
 
   // Link additional persons via join table
   if (additionalPersonIds.length > 0) {
-    for (const pid of additionalPersonIds) {
-      await prisma.taskPerson.upsert({
-        where: { taskId_personId: { taskId: task.id, personId: pid } },
-        create: { taskId: task.id, personId: pid },
-        update: {},
-      });
-    }
+    await prisma.taskPerson.createMany({
+      data: additionalPersonIds.map((personId) => ({ taskId: task.id, personId })),
+    });
   }
 
   return task;
